@@ -6,6 +6,10 @@ A Darktide Mod Framework mod for adjusting mission environments, including darkn
 
 Install DMF, place the `LetThereBeLight` folder in Darktide's mods directory, and add `LetThereBeLight` to `mod_load_order.txt`.
 
+## Download
+
+Download `LetThereBeLight.zip` from the [latest GitHub release](../../releases/latest). Do not use GitHub's source-code archives for installation.
+
 ## License
 
 Licensed under the [MIT License](LICENSE).
