@@ -1,7 +1,7 @@
 # LetThereBeLight: design
 
 Status 2026-10-24: unreleased rewrite after 1.2.1, ModID `LetThereBeLight`. Verified: static (`tools\validate.ps1`) and offline (parity and difference runs, see Tests); not yet run in game. Not pushed.
-Rewritten from scratch in the `LetThereBeLightBeta` prototype (local repository `mods/active/LetThereBeLightBeta`, commits `51d74f6` and `a5b80d7`) and moved here unchanged apart from the ModID. Parity baseline: this repository's `96866fa`, the last commit before the rewrite. Same setting ids, defaults and option values, plus a Toxic Gas option.
+Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here unchanged apart from the ModID; the prototype was then deleted. Parity baseline: this repository's `96866fa`, the last commit before the rewrite. Same setting ids, defaults and option values, plus a Toxic Gas option.
 
 ## Files
 - `LetThereBeLight.lua`: per-mission decisions, Inferno theme-unit collection and every hook.
@@ -15,6 +15,7 @@ Rewritten from scratch in the `LetThereBeLightBeta` prototype (local repository 
 - 2026-10-23 (user): environments are detected from the theme only, never from LOS mutators.
 - 2026-10-23 (user): add a Toxic Gas option (`normalize_toxic_gas`, default on like Ventilation Purge) that removes only the theme's shading environment.
 - 2026-10-24 (user): move the rewrite into Let There Be Light (same ModID, so no settings import) for live testing; do not push.
+- 2026-10-24 (user): delete the `LetThereBeLightBeta` prototype.
 
 ## Mission decisions
 - The circumstance and Havoc data are fixed once the mission's managers exist: `GameplayInitStepManagers` creates the difficulty and circumstance managers before any hook below runs (`gameplay_init_step_managers.lua:99,124`).
@@ -73,7 +74,7 @@ Against `96866fa`:
 ## Tests
 - `tools\validate.ps1 -Path mods\active\LetThereBeLight` → 2026-10-24: passed, 0 diagnostics.
 - `tests/run_parity.sh 1 300` → 2026-10-24: 0 differences against `96866fa` over the real templates (67-102 missions per theme); `Unit.flow_event` handler calls old 22,639, new 0. With `BASELINE=c988972` (before the Inferno theme-unit fix) 2 of seeds 1-40 differ.
-- `tests/run_differences.sh` → 2026-10-24: 0 failing. The same checks failed 9 times against the prototype before the theme-only change (`LetThereBeLightBeta` `51d74f6`).
+- `tests/run_differences.sh` → 2026-10-24: 0 failing. On 2026-10-23 the same checks failed 9 times against the prototype before the theme-only change, which shows they detect the old detection.
 
 ## Runtime status
 Not run in game. Smallest next in-game test:
