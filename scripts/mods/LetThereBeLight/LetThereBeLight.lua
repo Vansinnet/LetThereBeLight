@@ -176,6 +176,6 @@ mod.update = function()
 
     local message_id = activation_message_id()
     if message_id and get_setting("chat_notification") then
-        mod:echo_localized(message_id)
+        mod:echo("%s", mod:localize(message_id))
     end
 end
