@@ -3,6 +3,7 @@ local mod = get_mod("LetThereBeLight")
 local CameraHandler = require("scripts/managers/player/player_game_states/camera_handler")
 local LightControllerExtension = require("scripts/extension_systems/light_controller/light_controller_extension")
 local ShadingEnvironmentSystem = require("scripts/extension_systems/shading_environment/shading_environment_system")
+local WeatherExtension = require("scripts/extension_systems/weather/weather_extension")
 
 local INFERNO_FIRE_PARTICLES = {
     ["content/fx/particles/environment/fire_blaze_01"] = true,
@@ -16,6 +17,7 @@ local INFERNO_FIRE_PARTICLES = {
 
 local settings_cache = {}
 local inferno_fire_units = setmetatable({}, { __mode = "k" })
+local inferno_theme_units = {}
 local activation_message_pending = false
 
 local function get_setting(setting_id)
@@ -100,11 +102,54 @@ mod:hook(LightControllerExtension, "set_enabled", function(func, self, is_enable
     return func(self, is_enabled, is_deterministic)
 end)
 
+-- The Inferno theme spawns as a nested level named "<theme package>.level".
+local function collect_inferno_theme_units(level, level_name)
+    local units = {}
+    local file_path = level_name and level_name .. "_mission_themes"
+
+    if not (level and file_path and Application.can_get_resource("lua", file_path)) then
+        return units
+    end
+
+    local theme_level_names = {}
+
+    for _, theme_name in pairs(require(file_path).ember or {}) do
+        theme_level_names[theme_name .. ".level"] = true
+    end
+
+    local nested_levels = Level.nested_levels(level)
+
+    for i = 1, #nested_levels do
+        local nested_level = nested_levels[i]
+
+        if theme_level_names[Level.name(nested_level)] then
+            local nested_units = Level.units(nested_level, true)
+
+            for j = 1, #nested_units do
+                units[nested_units[j]] = true
+            end
+        end
+    end
+
+    return units
+end
+
+-- Level unit components initialize after this call, so the set is ready for ParticleEffect and WeatherVolume.
+mod:hook_require("scripts/game_states/game/gameplay_sub_states/gameplay_init_step_states/gameplay_init_step_extension_units", function(GameplayInitStepExtensionUnits)
+    mod:hook(GameplayInitStepExtensionUnits, "_init_extension_unit_registration", function(func, self, world, shared_state, ...)
+        inferno_theme_units = normalized_inferno_active()
+            and collect_inferno_theme_units(shared_state.level, shared_state.level_name)
+            or {}
+
+        return func(self, world, shared_state, ...)
+    end)
+end)
+
 mod:hook_require("scripts/components/particle_effect", function(ParticleEffect)
     mod:hook(ParticleEffect, "init", function(func, self, unit)
         local particle_name = self:get_data(unit, "particle")
 
-        if INFERNO_FIRE_PARTICLES[particle_name] then
+        if INFERNO_FIRE_PARTICLES[particle_name] or inferno_theme_units[unit] then
             inferno_fire_units[unit] = true
         end
 
@@ -112,12 +157,22 @@ mod:hook_require("scripts/components/particle_effect", function(ParticleEffect)
     end)
 
     mod:hook(ParticleEffect, "_create_particle", function(func, self)
-        if INFERNO_FIRE_PARTICLES[self._particle_name] and normalized_inferno_active() then
+        if (INFERNO_FIRE_PARTICLES[self._particle_name] or inferno_theme_units[self._unit])
+            and normalized_inferno_active() then
             return
         end
 
         return func(self)
     end)
+end)
+
+-- Priority 0 never wins in WeatherSystem.get_current_particles, so the volume is ignored.
+mod:hook(WeatherExtension, "setup_from_component", function(func, self, world_particles, screen_particles, priority)
+    if inferno_theme_units[self._unit] and normalized_inferno_active() then
+        return func(self, "", "", 0)
+    end
+
+    return func(self, world_particles, screen_particles, priority)
 end)
 
 mod:hook(Unit, "flow_event", function(func, unit, event_name)
@@ -159,6 +214,10 @@ end
 mod.on_game_state_changed = function(status, state_name)
     if state_name == "StateGameplay" then
         activation_message_pending = status == "enter"
+
+        if status == "exit" then
+            inferno_theme_units = {}
+        end
     end
 end
 

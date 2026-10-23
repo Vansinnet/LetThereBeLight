@@ -36,7 +36,7 @@ return {
         en = "Inferno: Replace with standard environment",
     },
     normalize_inferno_tooltip = {
-        en = "On: Uses the mission's standard lighting and environment instead of Inferno, and removes decorative map fires and their ambient sounds. Enemies, fire barrels, damaging fire, and other gameplay effects are unchanged. Changes take effect when the mission loads.",
+        en = "On: Uses the mission's standard lighting and environment instead of Inferno, and removes Inferno's decorative fires, smoke and weather effects, and their ambient sounds. Enemies, fire barrels, damaging fire, and other gameplay effects are unchanged. Changes take effect when the mission loads.",
     },
     remove_ventilation_purge_fog = {
         en = "Ventilation Purge: Replace with standard environment",
