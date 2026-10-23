@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Checks each deliberate difference (DESIGN.md) on real circumstance templates: the pre-rewrite mod
+# shows the old behavior, this working tree the new one.
+# Usage: tests/run_differences.sh   (BASELINE, OLD_MOD and NEW_MOD as in run_parity.sh)
+set -uo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+root="$(cd "$here/../../../.." && pwd)"
+luajit="${LUAJIT:-}"; [[ -n "$luajit" ]] || { [[ -x "$root/tools/luajit/luajit" ]] && luajit="$root/tools/luajit/luajit" || luajit=luajit; }
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+baseline="${BASELINE:-96866fa}"
+old_mod="${OLD_MOD:-$tmp/baseline}"
+[[ -n "${OLD_MOD:-}" ]] || { mkdir -p "$old_mod" && git -C "$here/.." archive "$baseline" | tar -x -C "$old_mod"; } || { echo "cannot extract baseline $baseline"; exit 1; }
+new_mod="${NEW_MOD:-$here/..}"
+fails=0; tab=$'\t'
+SEED=7
+
+run() { # scenario circumstance settings
+    "$luajit" "$here/parity_sim.lua" "$root" "$old_mod" LetThereBeLight "$SEED" "$2" "$3" > "$tmp/$1.old" 2>/dev/null || { echo "$1: old crashed"; fails=$((fails + 1)); }
+    "$luajit" "$here/parity_sim.lua" "$root" "$new_mod" LetThereBeLight "$SEED" "$2" "$3" > "$tmp/$1.new" 2>/dev/null || { echo "$1: new crashed"; fails=$((fails + 1)); }
+}
+
+expect() { # scenario old|new has|lacks pattern description
+    local file="$tmp/$1.$2"
+    if [[ "$3" == has ]] && ! grep -q -- "$4" "$file"; then echo "$1 ($2): missing $5"; fails=$((fails + 1)); fi
+    if [[ "$3" == lacks ]] && grep -q -- "$4" "$file"; then echo "$1 ($2): unexpected $5"; fails=$((fails + 1)); fi
+}
+
+lights_off() { grep -c "^light${tab}unit_[0-9]*${tab}false$" "$tmp/$1.$2"; }
+
+# 1. Darkness LOS mutator with the default theme: the rewrite leaves the mission alone.
+run stealth stealth_01 "chat_notification=true,power_interruption_mode=normal_environment"
+expect stealth old has "^echo${tab}Let There Be Light: Darkness visuals removed" "darkness message"
+expect stealth old has "^camera_environment${tab}nil" "removed theme environment"
+expect stealth new lacks "^echo" "chat message"
+expect stealth new has "^camera_environment${tab}theme_environment" "kept theme environment"
+[[ $(lights_off stealth old) -eq 0 && $(lights_off stealth new) -gt 0 ]] || { echo "stealth: lights should be forced only by the old mod"; fails=$((fails + 1)); }
+
+# 2. Dawn expedition with the darkness LOS mutator: only the Dawn option decides.
+run dawn_off exps_dawn_au "chat_notification=true,power_interruption_mode=lights_on,normalize_dawn=false"
+expect dawn_off old has "^echo${tab}Let There Be Light: Darkness mission lights enabled" "darkness message"
+expect dawn_off new lacks "^echo" "chat message"
+expect dawn_off new has "^camera_environment${tab}theme_environment" "kept Dawn environment"
+[[ $(lights_off dawn_off old) -eq 0 && $(lights_off dawn_off new) -gt 0 ]] || { echo "dawn_off: lights should be forced only by the old mod"; fails=$((fails + 1)); }
+run dawn_on exps_dawn_au "chat_notification=true,power_interruption_mode=lights_on,normalize_dawn=true"
+expect dawn_on old has "^echo${tab}Let There Be Light: Darkness mission lights enabled" "darkness message"
+expect dawn_on new has "^echo${tab}Let There Be Light: Dawn replaced with standard environment" "Dawn message"
+expect dawn_on new has "^camera_environment${tab}nil" "removed Dawn environment"
+
+# 3. Toxic Gas option: on removes the theme environment (lights untouched), off changes nothing.
+run gas_on toxic_gas_01 "chat_notification=true,normalize_toxic_gas=true"
+expect gas_on old has "^camera_environment${tab}theme_environment" "kept theme environment"
+expect gas_on old lacks "^echo" "chat message"
+expect gas_on new has "^echo${tab}Let There Be Light: Toxic Gas environment replaced with standard environment" "Toxic Gas message"
+expect gas_on new has "^camera_environment${tab}nil" "removed theme environment"
+expect gas_on new has "^theme_shading_fetched${tab}false" "skipped theme shading slots"
+[[ $(lights_off gas_on new) -gt 0 ]] || { echo "gas_on: the rewrite must not force lights"; fails=$((fails + 1)); }
+run gas_off toxic_gas_01 "chat_notification=true,normalize_toxic_gas=false"
+cmp -s "$tmp/gas_off.old" "$tmp/gas_off.new" || { echo "gas_off: old and new differ"; diff "$tmp/gas_off.old" "$tmp/gas_off.new" | head -5; fails=$((fails + 1)); }
+
+echo "differences: $fails failing"
+[[ $fails -eq 0 ]]
