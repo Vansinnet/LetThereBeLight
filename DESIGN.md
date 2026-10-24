@@ -88,6 +88,7 @@ Against `96866fa`:
 - Theme nested level `.../fm_cargo_themes/ember_01/theme_ember_01_fm_cargo.level` found, 737 units; 330 of its ParticleEffect components, 0 with a live particle. 7 theme weather volumes, none with priority above 0; no weather particles active. Circumstance audio state `None`.
 - The theme held all 299 named-list fires (none outside it) plus fire_blaze_tall, billowy smoke, chimney smoke and ash weather: the kinds the old name list missed.
 - Live fire and smoke outside the theme (base level): fire_exhaust_02 x12, embers_rising_5m x11, backdrop_smoke_large x4, manhole_smoke_01 x3. The same snapshot in a standard `fm_cargo` run (circumstance `default`, same session) showed exactly the same four kinds and counts, so on this map the Inferno run's ParticleEffect fire and smoke match the standard environment.
+- Reported haze near (96.38, 18.74, -7.94): the live effects within 40 m are 12 base-level `tank_foundry/steam_billowy_11`/`_12`, identical (positions and names) in a standard `fm_cargo` run. It is the map's own steam. The theme has no `VolumetricFog` or `ShadingEnvironmentVolume` units (262 LightController, 330 ParticleEffect, 7 WeatherVolume, 138 component-free mesh units).
 - Not covered by the snapshot: particles a unit's flow creates without a ParticleEffect component, and sounds.
 
 Smallest next in-game test:
