@@ -1,6 +1,6 @@
 # LetThereBeLight
 
-A Darktide Mod Framework mod for adjusting mission environments, including darkness, atmospheric lighting, Dawn, Inferno, Ventilation Purge fog, and Toxic Gas.
+A Darktide Mod Framework mod for adjusting mission environments, including darkness, atmospheric lighting, Dawn, Inferno, and Ventilation Purge fog.
 
 ## Installation
 

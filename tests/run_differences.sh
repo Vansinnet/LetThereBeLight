@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Checks deliberate differences 1-3 and 6 (DESIGN.md) on real circumstance templates: the pre-rewrite mod
+# Checks deliberate differences 1, 2 and 6 (DESIGN.md) and that Toxic Gas stays unchanged on real circumstance templates: the pre-rewrite mod
 # shows the old behavior, this working tree the new one.
 # Usage: tests/run_differences.sh   (BASELINE, OLD_MOD and NEW_MOD as in run_parity.sh)
 set -uo pipefail
@@ -46,16 +46,10 @@ expect dawn_on old has "^echo${tab}Let There Be Light: Darkness mission lights e
 expect dawn_on new has "^echo${tab}Let There Be Light: Dawn replaced with standard environment" "Dawn message"
 expect dawn_on new has "^camera_environment${tab}nil" "removed Dawn environment"
 
-# 3. Toxic Gas option: on removes the theme environment (lights untouched), off changes nothing.
-run gas_on toxic_gas_01 "chat_notification=true,normalize_toxic_gas=true"
-expect gas_on old has "^camera_environment${tab}theme_environment" "kept theme environment"
-expect gas_on old lacks "^echo" "chat message"
-expect gas_on new has "^echo${tab}Let There Be Light: Toxic Gas environment replaced with standard environment" "Toxic Gas message"
-expect gas_on new has "^camera_environment${tab}nil" "removed theme environment"
-expect gas_on new has "^theme_shading_fetched${tab}false" "skipped theme shading slots"
-[[ $(lights_off gas_on new) -gt 0 ]] || { echo "gas_on: the rewrite must not force lights"; fails=$((fails + 1)); }
-run gas_off toxic_gas_01 "chat_notification=true,normalize_toxic_gas=false"
-cmp -s "$tmp/gas_off.old" "$tmp/gas_off.new" || { echo "gas_off: old and new differ"; diff "$tmp/gas_off.old" "$tmp/gas_off.new" | head -5; fails=$((fails + 1)); }
+# Toxic Gas is never changed: its environment shows where the gas starts (user decision 2026-10-24).
+run gas toxic_gas_01 "chat_notification=true"
+cmp -s "$tmp/gas.old" "$tmp/gas.new" || { echo "gas: old and new differ"; diff "$tmp/gas.old" "$tmp/gas.new" | head -5; fails=$((fails + 1)); }
+expect gas new has "^camera_environment${tab}theme_environment" "kept Toxic Gas environment"
 
 # 6. Inferno audio state: reset to the default only while the Inferno option is on.
 run sound_on ember_01 "normalize_inferno=true"

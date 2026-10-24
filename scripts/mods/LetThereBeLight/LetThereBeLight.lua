@@ -44,18 +44,16 @@ local function build_env(state)
     local dawn = mod:get("normalize_dawn") and theme_active("dawn")
     local inferno = mod:get("normalize_inferno") and theme_active("ember")
     local purge = mod:get("remove_ventilation_purge_fog") and theme_active("ventilation_purge")
-    local toxic_gas = mod:get("normalize_toxic_gas") and theme_active("toxic_gas")
 
     return {
         lights_on = darkness or dawn or inferno,
-        remove_theme_environment = darkness_environment or dawn or inferno or purge or toxic_gas,
+        remove_theme_environment = darkness_environment or dawn or inferno or purge,
         inferno = inferno,
         message = darkness and (darkness_environment and "power_interruption_standard_lighting_active"
                 or "power_interruption_atmospheric_lighting_active")
             or dawn and "dawn_standard_environment_active"
             or inferno and "inferno_standard_environment_active"
-            or purge and "ventilation_purge_fog_removed"
-            or toxic_gas and "toxic_gas_standard_environment_active",
+            or purge and "ventilation_purge_fog_removed",
     }
 end
 

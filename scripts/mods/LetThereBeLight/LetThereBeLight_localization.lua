@@ -3,7 +3,7 @@ return {
         en = "Let There Be Light",
     },
     mod_description = {
-        en = "Adjusts lighting during dark mission environments, normalizes Dawn and Inferno, removes fog during Ventilation Purge, and replaces the Toxic Gas environment. Changes take effect when the mission is loaded.",
+        en = "Adjusts lighting during dark mission environments, normalizes Dawn and Inferno, and removes fog during Ventilation Purge. Changes take effect when the mission is loaded.",
     },
     chat_notification = {
         en = "Chat notification",
@@ -44,12 +44,6 @@ return {
     remove_ventilation_purge_fog_tooltip = {
         en = "On: Uses the mission's standard environment instead of the foggy Ventilation Purge environment. The line-of-sight modifier and all other gameplay effects are unchanged. Changes take effect when the mission loads.",
     },
-    normalize_toxic_gas = {
-        en = "Toxic Gas: Replace with standard environment",
-    },
-    normalize_toxic_gas_tooltip = {
-        en = "On: Uses the mission's standard environment instead of the Toxic Gas environment. The gas clouds, their damage, and all other gameplay effects are unchanged. Changes take effect when the mission loads.",
-    },
     power_interruption_atmospheric_lighting_active = {
         en = "Let There Be Light: Darkness mission lights enabled",
     },
@@ -64,8 +58,5 @@ return {
     },
     ventilation_purge_fog_removed = {
         en = "Let There Be Light: Ventilation Purge fog removed",
-    },
-    toxic_gas_standard_environment_active = {
-        en = "Let There Be Light: Toxic Gas environment replaced with standard environment",
     },
 }
