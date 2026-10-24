@@ -1,7 +1,6 @@
 local mod = get_mod("LetThereBeLight")
 
 local CameraHandler = require("scripts/managers/player/player_game_states/camera_handler")
-local LightControllerExtension = require("scripts/extension_systems/light_controller/light_controller_extension")
 local ShadingEnvironmentSystem = require("scripts/extension_systems/shading_environment/shading_environment_system")
 local WeatherExtension = require("scripts/extension_systems/weather/weather_extension")
 local WwiseGameSyncSettings = require("scripts/settings/wwise_game_sync/wwise_game_sync_settings")
@@ -125,12 +124,20 @@ mod:hook_require("scripts/game_states/game/gameplay_sub_states/gameplay_init_ste
     end)
 end)
 
-mod:hook(LightControllerExtension, "set_enabled", function(func, self, is_enabled, is_deterministic)
-    if not is_enabled and mission_env().lights_on then
-        is_enabled = true
-    end
+-- Only the light groups the theme switches off are turned on. Lights that are off in the standard
+-- environment (component default or level flow) stay off.
+mod:hook_require("scripts/extension_systems/light_controller/light_controller_system", function(LightControllerSystem)
+    mod:hook(LightControllerSystem, "_extract_light_groups", function(func, self, themes)
+        local light_groups = func(self, themes)
 
-    return func(self, is_enabled, is_deterministic)
+        if mission_env().lights_on then
+            for group_name in pairs(light_groups) do
+                light_groups[group_name] = true
+            end
+        end
+
+        return light_groups
+    end)
 end)
 
 mod:hook(CameraHandler, "_get_theme_shading_environment", function(func, self, themes)

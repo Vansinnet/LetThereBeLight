@@ -30,7 +30,7 @@ Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here
 
 ## Hooks
 - `GameplayInitStepExtensionUnits._init_extension_unit_registration` (`gameplay_init_step_extension_units.lua:51-70`): runs once per gameplay load, after the managers step (managers → Nvidia AI agent → extension units) and before level unit components initialize (time-sliced from line 69). It collects the Inferno theme's units and sends the chat message, so the mod needs no `mod.update`.
-- `LightControllerExtension.set_enabled` (`light_controller_extension.lua:69`): forces `true` when lights are on for the mission; called on setup, light-group changes and server RPCs, not per frame. Destroyed destructible lights stay off (`destructible_extension.lua:579-585`).
+- `LightControllerSystem._extract_light_groups` (`light_controller_system.lua:36-55`): when lights are on for the mission (darkness unless off, Dawn, Inferno), every light group the theme lists is set on. It runs at system init and on theme changes (Expedition locations), and `on_gameplay_post_init` applies the groups (lines 81-85). Lights outside those groups keep their component default (`start_enabled`, `scripts/components/light_controller.lua:18-28`) and later flow or server changes (`enable_lights`/`disable_lights`, lines 101-121; RPCs, `light_controller_system.lua:154-161`).
 - `CameraHandler._get_theme_shading_environment` (`camera_handler.lua:513`, from `spawn_camera` at 533) and `ShadingEnvironmentSystem._fetch_theme_shading_environments` (`shading_environment_system.lua:31`, from `on_theme_changed`, also used by Expedition locations at `expedition_spawner.lua:737-766`): skipped to drop the theme's shading environment. Volumes then fall back to their own default (`shading_environment_extension.lua:90-104`).
 - `ParticleEffect.init` and `_create_particle` (`scripts/components/particle_effect.lua:5,88`): Inferno particles are the old name list plus every unit of the ember theme's nested level. `_create_particle` also covers later `create_particle` calls, for example `set_object_set_unit_visible` (line 320).
 - `WeatherExtension.setup_from_component` (`weather_extension.lua:13`): the theme's weather volumes get priority 0, which never wins in `WeatherSystem.get_current_particles` (`weather_system.lua:87`).
@@ -60,6 +60,7 @@ Against `96866fa`:
 4. The chat message is sent from the extension-units hook instead of the first `mod.update` after the circumstance manager exists; both run during the same load. Enabling the mod in the middle of a mission no longer prints a message there, because nothing changes until the next load. The simulator keeps the enable state constant within a mission.
 5. Other mods' `Unit.flow_event` hooks do not see `particle_effect_component_init` for suppressed Inferno effects. Not observable in the trace.
 6. With the Inferno option on, the circumstance audio state is reset from `ember_01` to the default `None`. Filter: parity runs print no audio state for ember-theme missions. Check: scenarios `sound_on`, `sound_hunt` (Hunting Grounds sounds still start) and `sound_off` (matches the old mod).
+7. Lights (user decision 2026-10-24): the old mod forced every `set_enabled(false)` to `true` in darkness, Dawn and Inferno, which also lit lamps that are off in the standard environment (seen in game on `fm_cargo`: a ceiling lamp at about (94.8, 16.5, -4.3), off and in no group in the standard mission, lit in Inferno and shining through the map's steam). Now only the theme's light groups are turned on. Filter: parity runs print no light states for darkness, Dawn and Ember missions. Check: scenarios `light_inferno`, `light_dark`, `light_off`, `light_dark_off`.
 
 ## Source contracts
 | Use | Source path:line |
@@ -73,7 +74,7 @@ Against `96866fa`:
 | Mission themes file | `scripts/foundation/managers/package/utilities/theme_package.lua:7-20` |
 | Particle effect component | `scripts/components/particle_effect.lua:5-33,88,320-326` |
 | Weather volumes | `scripts/components/weather_volume.lua:5-21`, `scripts/extension_systems/weather/weather_extension.lua:13-17`, `weather_system.lua:76-104` |
-| Light controller | `scripts/extension_systems/light_controller/light_controller_extension.lua:69-87` |
+| Light groups | `scripts/extension_systems/light_controller/light_controller_system.lua:36-55,81-85,154-161`, `scripts/components/light_controller.lua:18-28,101-121` |
 | Theme shading environment | `scripts/managers/player/player_game_states/camera_handler.lua:513-541`, `scripts/extension_systems/shading_environment/shading_environment_system.lua:13-45`, `shading_environment_extension.lua:90-104` |
 | Circumstance audio state | `scripts/managers/wwise_game_sync/wwise_state_groups/wwise_state_group_circumstance.lua:13-30`, `scripts/managers/wwise_game_sync/wwise_game_sync_manager.lua:82-92,119-127` |
 | Toxic gas clouds | `scripts/managers/mutator/mutators/mutator_toxic_gas_volumes.lua:210-237`, `scripts/components/toxic_gas_fog.lua:37-68` |
@@ -96,7 +97,8 @@ Smallest next in-game test:
 2. Open the mod options: your settings are unchanged, and "Toxic Gas: Replace with standard environment" is on.
 3. Start an Inferno mission (Inferno option on). Expected: chat "Inferno environment and decorative fires removed", standard lighting, no decorative fire, smoke or falling embers, and no Inferno ambience or music variant (compare with the option off).
 4. Start a Toxic Gas mission. Expected: chat "Toxic Gas environment replaced with standard environment", no green haze over the map, and the gas clouds still clearly visible where they damage.
-5. Start a Power Interruption mission with Dark Mission Lighting on Atmospheric Lighting. Expected: chat "Darkness mission lights enabled" and the mission lights on.
+5. Start a Power Interruption mission with Dark Mission Lighting on Atmospheric Lighting. Expected: chat "Darkness mission lights enabled" and the lights that the darkness switches off are on again. Some lamps may now stay off, as they are in the standard mission.
+5b. In Inferno Cargo, at the steam spot near (96, 19, -8): the ceiling lamp stays dark and the steam looks as in the standard mission.
 6. In the mission, run `dee census hooks --mod LetThereBeLight`. Expected: every target `dmf_hooked`, and no `Unit.flow_event` hook.
 
 Runtime-pending: theme-unit collection in a real Inferno mission, the flow-event mute (fire sounds gone), the Inferno audio reset (no Inferno ambience or music variant), gas-cloud visibility under the standard environment, Dawn and Ventilation Purge.

@@ -117,6 +117,13 @@ Unit = {
 
 local next_particle_id = 0
 
+-- Parity filter for deliberate difference 7, set per mission (see run_mission).
+show_lights = true
+
+Theme = {
+    light_groups = function() return { darkness = "OFF", emergency = "ON" } end,
+}
+
 WwiseWorld = {
     trigger_resource_event = function(world, event) print("wwise_event", event) end,
 }
@@ -150,7 +157,11 @@ Application = {
 }
 
 package.loaded["core/scripts/common/light_controller_utilities"] = {
-    set_enabled = function(unit, is_enabled) print("light", uid(unit), tostring(is_enabled)) end,
+    set_enabled = function(unit, is_enabled)
+        if show_lights then
+            print("light", uid(unit), tostring(is_enabled))
+        end
+    end,
     set_flicker = function(unit, enabled) print("flicker", uid(unit), tostring(enabled)) end,
 }
 
@@ -184,6 +195,7 @@ local ParticleEffect = require("scripts/components/particle_effect")
 local LightControllerExtension = require("scripts/extension_systems/light_controller/light_controller_extension")
 local WeatherExtension = require("scripts/extension_systems/weather/weather_extension")
 local WeatherSystem = require("scripts/extension_systems/weather/weather_system")
+local LightControllerSystem = require("scripts/extension_systems/light_controller/light_controller_system")
 local WwiseStateGroupCircumstance = require("scripts/managers/wwise_game_sync/wwise_state_groups/wwise_state_group_circumstance")
 
 -- DMF mock -----------------------------------------------------------------------------------------
@@ -384,6 +396,12 @@ local function run_mission(index)
     end
 
     mod.enabled = scenario_circumstance ~= nil or chance(0.9)
+
+    -- Parity filter for deliberate difference 7: the old mod forced every light on in darkness,
+    -- Dawn and Inferno missions, so their light states are compared only in difference scenarios.
+    local LIGHT_THEMES = { darkness = true, dawn = true, ember = true }
+
+    show_lights = scenario_circumstance ~= nil or not (LIGHT_THEMES[theme] or LIGHT_THEMES[havoc_theme])
     print(string.format("mission %d circumstance=%s theme=%s havoc=%s enabled=%s", index, circumstance_name,
         tostring(theme), tostring(havoc_theme), tostring(mod.enabled)))
 
@@ -475,6 +493,13 @@ local function run_mission(index)
     local wwise_group = WwiseStateGroupCircumstance:new("wwise_world", "circumstance")
 
     wwise_group:on_gameplay_post_init(level)
+
+    -- Theme light groups as LightControllerSystem reads them at init.
+    if show_lights then
+        local groups = LightControllerSystem._extract_light_groups({}, { "theme" })
+
+        print("light_groups", "darkness=" .. tostring(groups.darkness), "emergency=" .. tostring(groups.emergency))
+    end
 
     -- Parity filter for deliberate difference 6: the old mod kept the Inferno audio state.
     if scenario_circumstance or theme ~= "ember" then
