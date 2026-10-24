@@ -51,6 +51,12 @@ return {
                 default_value = true,
                 tooltip = "remove_ventilation_purge_fog_tooltip",
             },
+            {
+                setting_id = "normalize_toxic_gas",
+                type = "checkbox",
+                default_value = true,
+                tooltip = "normalize_toxic_gas_tooltip",
+            },
         },
     },
 }

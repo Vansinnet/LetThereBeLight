@@ -1,7 +1,7 @@
 # LetThereBeLight: design
 
 Status 2026-10-24: unreleased rewrite after 1.2.1, ModID `LetThereBeLight`. Verified: static (`tools\validate.ps1`) and offline (parity and difference runs, see Tests); not yet run in game. Not pushed.
-Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here unchanged apart from the ModID; the prototype was then deleted. Parity baseline: this repository's `96866fa`, the last commit before the rewrite. Same setting ids, defaults and option values.
+Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here unchanged apart from the ModID; the prototype was then deleted. Parity baseline: this repository's `96866fa`, the last commit before the rewrite. Same setting ids, defaults and option values, plus a Toxic Gas option.
 
 ## Files
 - `LetThereBeLight.lua`: per-mission decisions, Inferno theme-unit collection and every hook.
@@ -13,7 +13,7 @@ Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here
 - 2026-10-23 (user): rewrite from scratch, minimal and optimized, with the same purpose and options: switch off the visual side of mission modifiers.
 - 2026-10-23: built first as the `<Mod>Beta` prototype (`darktide-new-mod`).
 - 2026-10-23 (user): environments are detected from the theme only, never from LOS mutators.
-- 2026-10-23 (user): add a Toxic Gas option. 2026-10-24 (user, in game): removed again. Without the theme environment the gas plants on the ground no longer show where the gas begins, so the Toxic Gas environment is never changed.
+- 2026-10-23 (user): add a Toxic Gas option (`normalize_toxic_gas`, default on like Ventilation Purge) that removes only the theme's shading environment.
 - 2026-10-24 (user): move the rewrite into Let There Be Light (same ModID, so no settings import) for live testing; do not push.
 - 2026-10-24 (user): delete the `LetThereBeLightBeta` prototype.
 - 2026-10-24 (user, in game): keep forcing every light on in darkness, Dawn and Inferno. Turning on only the theme's light groups (`LightControllerSystem._extract_light_groups`, commit `20594bf`, reverted in `ac4ccfc`) made Inferno far too dark and unlike the standard mission. The forced lights also light lamps that are off in the standard mission (on `fm_cargo` a ceiling lamp near (94.8, 16.5, -4.3) shines through the map's steam); that is accepted.
@@ -25,7 +25,9 @@ Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here
 - Of the 315 circumstance templates in 1.13.3, two carry an LOS mutator that does not match their theme: `stealth_01` (darkness LOS, default theme, `stealth_circumstance_template.lua:4-11`) and `exps_dawn_au` (darkness LOS, Dawn theme, `expeditions_circumstance_template.lua:269-280`). The old mod treated both as darkness.
 
 ## Toxic Gas
-- Not changed (user decision 2026-10-24). The `toxic_gas` theme exists on 10 mission levels and 33 templates; its environment is what makes the gas plants on the ground readable, and they warn where the gas starts. `run_differences.sh` checks that a Toxic Gas mission stays exactly as in the old mod.
+- The `toxic_gas` theme exists on 10 mission levels (their `_mission_themes` files under `darktide-source/content/levels/`) and is used by 33 templates, Havoc included.
+- The option removes the theme's shading environment only, the same way as Ventilation Purge; lights are not forced.
+- The gas clouds stay: `MutatorToxicGasVolumes` drives `ToxicGasFog` units (`mutator_toxic_gas_volumes.lua:210-237`), and each cloud draws with its own registered volumetric volume, mesh material and particles (`toxic_gas_fog.lua:37-68`), not with a theme shading environment slot. Whether the clouds look the same against the standard environment can only be seen in game.
 
 ## Hooks
 - `GameplayInitStepExtensionUnits._init_extension_unit_registration` (`gameplay_init_step_extension_units.lua:51-70`): runs once per gameplay load, after the managers step (managers → Nvidia AI agent → extension units) and before level unit components initialize (time-sliced from line 69). It collects the Inferno theme's units and sends the chat message, so the mod needs no `mod.update`.
@@ -55,7 +57,7 @@ Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here
 Against `96866fa`:
 1. `stealth_01` (default theme, darkness LOS mutator) is left unchanged: no forced lights, no removed environment, no message. Filter: the parity pool leaves out every template whose LOS mutator does not match its theme. Check: `run_differences.sh`, scenario `stealth`.
 2. `exps_dawn_au` (Dawn theme, darkness LOS mutator) follows only the Dawn option and gets the Dawn message. Same filter. Check: scenarios `dawn_off` and `dawn_on`.
-3. Removed 2026-10-24: the Toxic Gas option (see Toxic Gas).
+3. The Toxic Gas option removes the `toxic_gas` theme environment and adds its message (last in message priority). Filter: parity runs set `normalize_toxic_gas` to false. Check: scenarios `gas_on` and `gas_off` (off matches the old mod exactly).
 4. The chat message is sent from the extension-units hook instead of the first `mod.update` after the circumstance manager exists; both run during the same load. Enabling the mod in the middle of a mission no longer prints a message there, because nothing changes until the next load. The simulator keeps the enable state constant within a mission.
 5. Other mods' `Unit.flow_event` hooks do not see `particle_effect_component_init` for suppressed Inferno effects. Not observable in the trace.
 6. With the Inferno option on, the circumstance audio state is reset from `ember_01` to the default `None`. Filter: parity runs print no audio state for ember-theme missions. Check: scenarios `sound_on`, `sound_hunt` (Hunting Grounds sounds still start) and `sound_off` (matches the old mod).
@@ -75,6 +77,7 @@ Against `96866fa`:
 | Light controller | `scripts/extension_systems/light_controller/light_controller_extension.lua:69-87` |
 | Theme shading environment | `scripts/managers/player/player_game_states/camera_handler.lua:513-541`, `scripts/extension_systems/shading_environment/shading_environment_system.lua:13-45`, `shading_environment_extension.lua:90-104` |
 | Circumstance audio state | `scripts/managers/wwise_game_sync/wwise_state_groups/wwise_state_group_circumstance.lua:13-30`, `scripts/managers/wwise_game_sync/wwise_game_sync_manager.lua:82-92,119-127` |
+| Toxic gas clouds | `scripts/managers/mutator/mutators/mutator_toxic_gas_volumes.lua:210-237`, `scripts/components/toxic_gas_fog.lua:37-68` |
 
 ## Tests
 - `tools\validate.ps1 -Path mods\active\LetThereBeLight` → 2026-10-24: passed, 0 diagnostics.
@@ -93,13 +96,13 @@ Against `96866fa`:
 
 Smallest next in-game test:
 1. Deploy `mods/active/LetThereBeLight`, and make sure no `LetThereBeLightBeta` folder is in the game's mods folder (AML loads every folder not prefixed with `_`). Restart the game.
-2. Open the mod options: your settings are unchanged.
+2. Open the mod options: your settings are unchanged, and "Toxic Gas: Replace with standard environment" is on.
 3. Start an Inferno mission (Inferno option on). Expected: chat "Inferno environment and decorative fires removed", standard lighting, no decorative fire, smoke or falling embers, and no Inferno ambience or music variant (compare with the option off).
-4. Start a Toxic Gas mission. Expected: no chat message and the normal Toxic Gas environment, including the gas plants on the ground.
+4. Start a Toxic Gas mission. Expected: chat "Toxic Gas environment replaced with standard environment", no green haze over the map, and the gas clouds still clearly visible where they damage.
 5. Start a Power Interruption mission with Dark Mission Lighting on Atmospheric Lighting. Expected: chat "Darkness mission lights enabled" and the mission lights on.
 6. In the mission, run `dee census hooks --mod LetThereBeLight`. Expected: every target `dmf_hooked`, and no `Unit.flow_event` hook.
 
-Runtime-pending: theme-unit collection in a real Inferno mission, the flow-event mute (fire sounds gone), the Inferno audio reset (no Inferno ambience or music variant), Dawn and Ventilation Purge.
+Runtime-pending: theme-unit collection in a real Inferno mission, the flow-event mute (fire sounds gone), the Inferno audio reset (no Inferno ambience or music variant), gas-cloud visibility under the standard environment, Dawn and Ventilation Purge.
 
 ## Open items
 - 2026-10-23: the name list can go once the theme-unit set is confirmed to cover the seven named fire particles. 2026-10-24: confirmed on fm_cargo (299 of 299 inside the theme); other Inferno maps unchecked.

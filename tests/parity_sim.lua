@@ -264,6 +264,11 @@ for id, value in pairs(forced) do
     settings[id] = value
 end
 
+-- Parity filter for deliberate difference 3: the old mod has no Toxic Gas option.
+if not scenario_circumstance and settings.normalize_toxic_gas ~= nil then
+    settings.normalize_toxic_gas = false
+end
+
 dofile(script_dir .. mod_id .. ".lua")
 
 -- Missions -----------------------------------------------------------------------------------------
