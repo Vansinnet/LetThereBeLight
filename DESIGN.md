@@ -84,7 +84,13 @@ Against `96866fa`:
 - `tests/run_differences.sh` → 2026-10-24: 0 failing; against `525c228` (before the audio reset): 2 failing. On 2026-10-23 the same checks failed 9 times against the prototype before the theme-only change, which shows they detect the old detection.
 
 ## Runtime status
-Not run in game. Smallest next in-game test:
+2026-10-24, dt-cli read-only snapshots (PID 15968), regular mission `fm_cargo` with circumstance `ember_01`, rewrite build loaded and enabled, `normalize_inferno` on:
+- Theme nested level `.../fm_cargo_themes/ember_01/theme_ember_01_fm_cargo.level` found, 737 units; 330 of its ParticleEffect components, 0 with a live particle. 7 theme weather volumes, none with priority above 0; no weather particles active. Circumstance audio state `None`.
+- The theme held all 299 named-list fires (none outside it) plus fire_blaze_tall, billowy smoke, chimney smoke and ash weather: the kinds the old name list missed.
+- Live fire and smoke outside the theme (base level): fire_exhaust_02 x12, embers_rising_5m x11, backdrop_smoke_large x4, manhole_smoke_01 x3. Whether the standard Cargo mission shows the same needs a snapshot of a non-Inferno run.
+- Not covered by the snapshot: particles a unit's flow creates without a ParticleEffect component, and sounds.
+
+Smallest next in-game test:
 1. Deploy `mods/active/LetThereBeLight`, and make sure no `LetThereBeLightBeta` folder is in the game's mods folder (AML loads every folder not prefixed with `_`). Restart the game.
 2. Open the mod options: your settings are unchanged, and "Toxic Gas: Replace with standard environment" is on.
 3. Start an Inferno mission (Inferno option on). Expected: chat "Inferno environment and decorative fires removed", standard lighting, no decorative fire, smoke or falling embers, and no Inferno ambience or music variant (compare with the option off).
