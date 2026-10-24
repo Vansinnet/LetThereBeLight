@@ -40,9 +40,20 @@ Vector3Box = function() return { unbox = function() return {} end } end
 QuaternionBox = Vector3Box
 Managers = { state = {} }
 
-function class(name)
+-- Like scripts/foundation/utilities/class.lua, a subclass gets copies of its base's methods.
+function class(name, super_name)
     local c = { __class_name = name }
+    local super = super_name and CLASS[super_name]
 
+    if super then
+        for key, value in pairs(super) do
+            c[key] = value
+        end
+
+        c.super = super
+    end
+
+    c.__class_name = name
     c.__index = c
     c.new = function(self, ...)
         local object = setmetatable({}, c)
@@ -105,6 +116,10 @@ Unit = {
 }
 
 local next_particle_id = 0
+
+WwiseWorld = {
+    trigger_resource_event = function(world, event) print("wwise_event", event) end,
+}
 
 World = {
     create_particle_group = function() return "group" end,
@@ -169,6 +184,7 @@ local ParticleEffect = require("scripts/components/particle_effect")
 local LightControllerExtension = require("scripts/extension_systems/light_controller/light_controller_extension")
 local WeatherExtension = require("scripts/extension_systems/weather/weather_extension")
 local WeatherSystem = require("scripts/extension_systems/weather/weather_system")
+local WwiseStateGroupCircumstance = require("scripts/managers/wwise_game_sync/wwise_state_groups/wwise_state_group_circumstance")
 
 -- DMF mock -----------------------------------------------------------------------------------------
 
@@ -415,7 +431,10 @@ local function run_mission(index)
     update()
 
     Managers.state = {
-        circumstance = { template = function() return template end },
+        circumstance = {
+            template = function() return template end,
+            circumstance_name = function() return circumstance_name end,
+        },
         difficulty = { get_parsed_havoc_data = function() return havoc_theme and { theme = havoc_theme } or nil end },
         mutator = { mutator = function(_, name) return mutators[name] end },
     }
@@ -450,6 +469,16 @@ local function run_mission(index)
                 unit.inside[position] = chance(0.6)
             end
         end
+    end
+
+    -- Gameplay post-init: the circumstance audio state group picks its state.
+    local wwise_group = WwiseStateGroupCircumstance:new("wwise_world", "circumstance")
+
+    wwise_group:on_gameplay_post_init(level)
+
+    -- Parity filter for deliberate difference 6: the old mod kept the Inferno audio state.
+    if scenario_circumstance or theme ~= "ember" then
+        print("wwise_state", wwise_group:wwise_state())
     end
 
     local function report()

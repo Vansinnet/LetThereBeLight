@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Checks each deliberate difference (DESIGN.md) on real circumstance templates: the pre-rewrite mod
+# Checks deliberate differences 1-3 and 6 (DESIGN.md) on real circumstance templates: the pre-rewrite mod
 # shows the old behavior, this working tree the new one.
 # Usage: tests/run_differences.sh   (BASELINE, OLD_MOD and NEW_MOD as in run_parity.sh)
 set -uo pipefail
@@ -56,6 +56,16 @@ expect gas_on new has "^theme_shading_fetched${tab}false" "skipped theme shading
 [[ $(lights_off gas_on new) -gt 0 ]] || { echo "gas_on: the rewrite must not force lights"; fails=$((fails + 1)); }
 run gas_off toxic_gas_01 "chat_notification=true,normalize_toxic_gas=false"
 cmp -s "$tmp/gas_off.old" "$tmp/gas_off.new" || { echo "gas_off: old and new differ"; diff "$tmp/gas_off.old" "$tmp/gas_off.new" | head -5; fails=$((fails + 1)); }
+
+# 6. Inferno audio state: reset to the default only while the Inferno option is on.
+run sound_on ember_01 "normalize_inferno=true"
+expect sound_on old has "^wwise_state${tab}ember_01$" "Inferno audio state"
+expect sound_on new has "^wwise_state${tab}None$" "default audio state"
+run sound_hunt ember_01_hunt_grou "normalize_inferno=true"
+expect sound_hunt new has "^wwise_state${tab}None$" "default audio state"
+expect sound_hunt new has "^wwise_event${tab}wwise/events/world/play_hunting_grounds_occasionals$" "Hunting Grounds sounds"
+run sound_off ember_01 "normalize_inferno=false"
+cmp -s "$tmp/sound_off.old" "$tmp/sound_off.new" || { echo "sound_off: old and new differ"; diff "$tmp/sound_off.old" "$tmp/sound_off.new" | head -5; fails=$((fails + 1)); }
 
 echo "differences: $fails failing"
 [[ $fails -eq 0 ]]

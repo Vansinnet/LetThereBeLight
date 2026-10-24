@@ -4,6 +4,7 @@ local CameraHandler = require("scripts/managers/player/player_game_states/camera
 local LightControllerExtension = require("scripts/extension_systems/light_controller/light_controller_extension")
 local ShadingEnvironmentSystem = require("scripts/extension_systems/shading_environment/shading_environment_system")
 local WeatherExtension = require("scripts/extension_systems/weather/weather_extension")
+local WwiseGameSyncSettings = require("scripts/settings/wwise_game_sync/wwise_game_sync_settings")
 
 local INFERNO_FIRE_PARTICLES = {
     ["content/fx/particles/environment/fire_blaze_01"] = true,
@@ -179,6 +180,18 @@ mod:hook(WeatherExtension, "setup_from_component", function(func, self, world_pa
     end
 
     return func(self, world_particles, screen_particles, priority)
+end)
+
+-- WwiseGameSyncManager pushes the group's state to Wwise every update, so resetting it here keeps
+-- the Inferno audio state (ember_01) off for the whole mission.
+mod:hook_require("scripts/managers/wwise_game_sync/wwise_state_groups/wwise_state_group_circumstance", function(WwiseStateGroupCircumstance)
+    mod:hook(WwiseStateGroupCircumstance, "on_gameplay_post_init", function(func, self, level)
+        func(self, level)
+
+        if mission_env().inferno then
+            self:_set_wwise_state(WwiseGameSyncSettings.default_group_state)
+        end
+    end)
 end)
 
 mod.on_setting_changed = function()

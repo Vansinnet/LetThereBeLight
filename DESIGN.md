@@ -35,6 +35,10 @@ Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here
 - `ParticleEffect.init` and `_create_particle` (`scripts/components/particle_effect.lua:5,88`): Inferno particles are the old name list plus every unit of the ember theme's nested level. `_create_particle` also covers later `create_particle` calls, for example `set_object_set_unit_visible` (line 320).
 - `WeatherExtension.setup_from_component` (`weather_extension.lua:13`): the theme's weather volumes get priority 0, which never wins in `WeatherSystem.get_current_particles` (`weather_system.lua:87`).
 
+## Inferno audio
+- `WwiseStateGroupCircumstance.on_gameplay_post_init` sets the `circumstance` state group from the template's `wwise_state` (`ember_01` for every ember template) and triggers `wwise_event_init` (`wwise_state_group_circumstance.lua:13-30`). `WwiseGameSyncManager.update` pushes each group's state to Wwise every update (`wwise_game_sync_manager.lua:82-92,119-127`), and shutdown sets the default again.
+- With the Inferno option on, the hook runs the original, then sets the default state (`WwiseGameSyncSettings.default_group_state`, `"None"`). `wwise_event_init` still fires, so Hunting Grounds sounds stay. What `ember_01` changes inside the Wwise project (music, ambience) is not visible in source.
+
 ## Inferno theme units
 - The ember theme spawns as a nested level named `<theme package>.level`, with its packages listed under `ember` in `<level_name>_mission_themes` (`scripts/foundation/managers/package/utilities/theme_package.lua:7-20`). Runtime evidence and consumers are in `types/SOURCES.md` (LetThereBeHandicap forced mission themes). The set is replaced at every gameplay load and cleared when `StateGameplay` exits.
 
@@ -44,7 +48,8 @@ Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here
 
 ## Not changed
 - Theme hide sets: they decide which level units spawn, and the client's level must match the server's unit indices (`types/SOURCES.md`, LetThereBeHandicap).
-- The circumstance audio state (`wwise_state_group_circumstance.lua:13-30`, for example `ember_01`, `darkness_01`) still plays.
+- The circumstance audio state of other environments (`darkness_01`, `ventilation_purge_01` and others) still plays; only Inferno's is reset (Inferno audio).
+- Sounds that theme units start from their own flow at level spawn run in the engine, not through Lua, and the Lua API has no way to stop a unit's sounds without their event ids.
 - Ventilation Purge and darkness theme units (possible fog or dust particles and weather volumes) are untouched until a runtime listing shows what they contain.
 
 ## Deliberate differences
@@ -54,6 +59,7 @@ Against `96866fa`:
 3. The Toxic Gas option removes the `toxic_gas` theme environment and adds its message (last in message priority). Filter: parity runs set `normalize_toxic_gas` to false. Check: scenarios `gas_on` and `gas_off` (off matches the old mod exactly).
 4. The chat message is sent from the extension-units hook instead of the first `mod.update` after the circumstance manager exists; both run during the same load. Enabling the mod in the middle of a mission no longer prints a message there, because nothing changes until the next load. The simulator keeps the enable state constant within a mission.
 5. Other mods' `Unit.flow_event` hooks do not see `particle_effect_component_init` for suppressed Inferno effects. Not observable in the trace.
+6. With the Inferno option on, the circumstance audio state is reset from `ember_01` to the default `None`. Filter: parity runs print no audio state for ember-theme missions. Check: scenarios `sound_on`, `sound_hunt` (Hunting Grounds sounds still start) and `sound_off` (matches the old mod).
 
 ## Source contracts
 | Use | Source path:line |
@@ -69,23 +75,24 @@ Against `96866fa`:
 | Weather volumes | `scripts/components/weather_volume.lua:5-21`, `scripts/extension_systems/weather/weather_extension.lua:13-17`, `weather_system.lua:76-104` |
 | Light controller | `scripts/extension_systems/light_controller/light_controller_extension.lua:69-87` |
 | Theme shading environment | `scripts/managers/player/player_game_states/camera_handler.lua:513-541`, `scripts/extension_systems/shading_environment/shading_environment_system.lua:13-45`, `shading_environment_extension.lua:90-104` |
+| Circumstance audio state | `scripts/managers/wwise_game_sync/wwise_state_groups/wwise_state_group_circumstance.lua:13-30`, `scripts/managers/wwise_game_sync/wwise_game_sync_manager.lua:82-92,119-127` |
 | Toxic gas clouds | `scripts/managers/mutator/mutators/mutator_toxic_gas_volumes.lua:210-237`, `scripts/components/toxic_gas_fog.lua:37-68` |
 
 ## Tests
 - `tools\validate.ps1 -Path mods\active\LetThereBeLight` → 2026-10-24: passed, 0 diagnostics.
 - `tests/run_parity.sh 1 300` → 2026-10-24: 0 differences against `96866fa` over the real templates (67-102 missions per theme); `Unit.flow_event` handler calls old 22,639, new 0. With `BASELINE=c988972` (before the Inferno theme-unit fix) 2 of seeds 1-40 differ.
-- `tests/run_differences.sh` → 2026-10-24: 0 failing. On 2026-10-23 the same checks failed 9 times against the prototype before the theme-only change, which shows they detect the old detection.
+- `tests/run_differences.sh` → 2026-10-24: 0 failing; against `525c228` (before the audio reset): 2 failing. On 2026-10-23 the same checks failed 9 times against the prototype before the theme-only change, which shows they detect the old detection.
 
 ## Runtime status
 Not run in game. Smallest next in-game test:
 1. Deploy `mods/active/LetThereBeLight`, and make sure no `LetThereBeLightBeta` folder is in the game's mods folder (AML loads every folder not prefixed with `_`). Restart the game.
 2. Open the mod options: your settings are unchanged, and "Toxic Gas: Replace with standard environment" is on.
-3. Start an Inferno mission (Inferno option on). Expected: chat "Inferno environment and decorative fires removed", standard lighting, no decorative fire, smoke or falling embers.
+3. Start an Inferno mission (Inferno option on). Expected: chat "Inferno environment and decorative fires removed", standard lighting, no decorative fire, smoke or falling embers, and no Inferno ambience or music variant (compare with the option off).
 4. Start a Toxic Gas mission. Expected: chat "Toxic Gas environment replaced with standard environment", no green haze over the map, and the gas clouds still clearly visible where they damage.
 5. Start a Power Interruption mission with Dark Mission Lighting on Atmospheric Lighting. Expected: chat "Darkness mission lights enabled" and the mission lights on.
 6. In the mission, run `dee census hooks --mod LetThereBeLight`. Expected: every target `dmf_hooked`, and no `Unit.flow_event` hook.
 
-Runtime-pending: theme-unit collection in a real Inferno mission, the flow-event mute (fire sounds gone), gas-cloud visibility under the standard environment, Dawn and Ventilation Purge.
+Runtime-pending: theme-unit collection in a real Inferno mission, the flow-event mute (fire sounds gone), the Inferno audio reset (no Inferno ambience or music variant), gas-cloud visibility under the standard environment, Dawn and Ventilation Purge.
 
 ## Open items
 - 2026-10-23: once a real Inferno mission confirms the theme-unit set covers the seven named fire particles, the name list can go.
