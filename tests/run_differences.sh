@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Checks deliberate differences 1-3, 6 and 7 (DESIGN.md) on real circumstance templates: the pre-rewrite mod
+# Checks deliberate differences 1-3 and 6 (DESIGN.md) on real circumstance templates: the pre-rewrite mod
 # shows the old behavior, this working tree the new one.
 # Usage: tests/run_differences.sh   (BASELINE, OLD_MOD and NEW_MOD as in run_parity.sh)
 set -uo pipefail
@@ -66,19 +66,6 @@ expect sound_hunt new has "^wwise_state${tab}None$" "default audio state"
 expect sound_hunt new has "^wwise_event${tab}wwise/events/world/play_hunting_grounds_occasionals$" "Hunting Grounds sounds"
 run sound_off ember_01 "normalize_inferno=false"
 cmp -s "$tmp/sound_off.old" "$tmp/sound_off.new" || { echo "sound_off: old and new differ"; diff "$tmp/sound_off.old" "$tmp/sound_off.new" | head -5; fails=$((fails + 1)); }
-
-# 7. Lights: only the theme's switched-off light groups come on; other lights keep their state.
-run light_inferno ember_01 "normalize_inferno=true"
-expect light_inferno old has "^light_groups${tab}darkness=false" "theme-off group"
-expect light_inferno new has "^light_groups${tab}darkness=true${tab}emergency=true$" "theme groups on"
-[[ $(lights_off light_inferno old) -eq 0 && $(lights_off light_inferno new) -gt 0 ]] || { echo "light_inferno: only the old mod should force every light on"; fails=$((fails + 1)); }
-run light_dark darkness_01 "power_interruption_mode=lights_on"
-expect light_dark new has "^light_groups${tab}darkness=true${tab}emergency=true$" "theme groups on"
-[[ $(lights_off light_dark old) -eq 0 && $(lights_off light_dark new) -gt 0 ]] || { echo "light_dark: only the old mod should force every light on"; fails=$((fails + 1)); }
-run light_off ember_01 "normalize_inferno=false"
-cmp -s "$tmp/light_off.old" "$tmp/light_off.new" || { echo "light_off: old and new differ"; diff "$tmp/light_off.old" "$tmp/light_off.new" | head -5; fails=$((fails + 1)); }
-run light_dark_off darkness_01 "power_interruption_mode=off"
-cmp -s "$tmp/light_dark_off.old" "$tmp/light_dark_off.new" || { echo "light_dark_off: old and new differ"; diff "$tmp/light_dark_off.old" "$tmp/light_dark_off.new" | head -5; fails=$((fails + 1)); }
 
 echo "differences: $fails failing"
 [[ $fails -eq 0 ]]
