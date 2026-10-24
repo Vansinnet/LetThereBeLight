@@ -16,6 +16,7 @@ Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here
 - 2026-10-23 (user): add a Toxic Gas option (`normalize_toxic_gas`, default on like Ventilation Purge) that removes only the theme's shading environment.
 - 2026-10-24 (user): move the rewrite into Let There Be Light (same ModID, so no settings import) for live testing; do not push.
 - 2026-10-24 (user): delete the `LetThereBeLightBeta` prototype.
+- 2026-10-24 (user, in game): keep forcing every light on in darkness, Dawn and Inferno. Turning on only the theme's light groups (`LightControllerSystem._extract_light_groups`, commit `20594bf`, reverted in `ac4ccfc`) made Inferno far too dark and unlike the standard mission. The forced lights also light lamps that are off in the standard mission (on `fm_cargo` a ceiling lamp near (94.8, 16.5, -4.3) shines through the map's steam); that is accepted.
 
 ## Mission decisions
 - The circumstance and Havoc data are fixed once the mission's managers exist: `GameplayInitStepManagers` creates the difficulty and circumstance managers before any hook below runs (`gameplay_init_step_managers.lua:99,124`).
