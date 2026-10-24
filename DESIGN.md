@@ -87,7 +87,7 @@ Against `96866fa`:
 2026-10-24, dt-cli read-only snapshots (PID 15968), regular mission `fm_cargo` with circumstance `ember_01`, rewrite build loaded and enabled, `normalize_inferno` on:
 - Theme nested level `.../fm_cargo_themes/ember_01/theme_ember_01_fm_cargo.level` found, 737 units; 330 of its ParticleEffect components, 0 with a live particle. 7 theme weather volumes, none with priority above 0; no weather particles active. Circumstance audio state `None`.
 - The theme held all 299 named-list fires (none outside it) plus fire_blaze_tall, billowy smoke, chimney smoke and ash weather: the kinds the old name list missed.
-- Live fire and smoke outside the theme (base level): fire_exhaust_02 x12, embers_rising_5m x11, backdrop_smoke_large x4, manhole_smoke_01 x3. Whether the standard Cargo mission shows the same needs a snapshot of a non-Inferno run.
+- Live fire and smoke outside the theme (base level): fire_exhaust_02 x12, embers_rising_5m x11, backdrop_smoke_large x4, manhole_smoke_01 x3. The same snapshot in a standard `fm_cargo` run (circumstance `default`, same session) showed exactly the same four kinds and counts, so on this map the Inferno run's ParticleEffect fire and smoke match the standard environment.
 - Not covered by the snapshot: particles a unit's flow creates without a ParticleEffect component, and sounds.
 
 Smallest next in-game test:
@@ -101,6 +101,6 @@ Smallest next in-game test:
 Runtime-pending: theme-unit collection in a real Inferno mission, the flow-event mute (fire sounds gone), the Inferno audio reset (no Inferno ambience or music variant), gas-cloud visibility under the standard environment, Dawn and Ventilation Purge.
 
 ## Open items
-- 2026-10-23: once a real Inferno mission confirms the theme-unit set covers the seven named fire particles, the name list can go.
+- 2026-10-23: the name list can go once the theme-unit set is confirmed to cover the seven named fire particles. 2026-10-24: confirmed on fm_cargo (299 of 299 inside the theme); other Inferno maps unchecked.
 - 2026-10-23: Nurgle Manifestation (5 levels) and Noir (2 levels) themes are not covered; the same shading-environment removal would apply.
 - 2026-10-23: a runtime listing of the Ventilation Purge theme's particle effects would show whether fog particles remain after its environment is removed.
