@@ -1,6 +1,6 @@
 # LetThereBeLight: design
 
-Status 2026-10-24: unreleased rewrite after 1.2.1, ModID `LetThereBeLight`. Verified: static (`tools\validate.ps1`) and offline (parity and difference runs, see Tests); not yet run in game. Not pushed.
+Status 2026-10-24: 1.3.0, ModID `LetThereBeLight`. Verified: static (`tools\validate.ps1`), offline (parity and difference runs, see Tests) and in game (Inferno on Cargo and Hab Dreyko, Toxic Gas, Census hook check; see Runtime status). Power Interruption, Dawn and Ventilation Purge were not retested in game.
 Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here unchanged apart from the ModID; the prototype was then deleted. Parity baseline: this repository's `96866fa`, the last commit before the rewrite. Same setting ids, defaults and option values, plus a Toxic Gas option.
 
 ## Files
