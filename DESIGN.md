@@ -14,7 +14,7 @@ Rewritten from scratch in a local `LetThereBeLightBeta` prototype and moved here
 - 2026-10-23: built first as the `<Mod>Beta` prototype (`darktide-new-mod`).
 - 2026-10-23 (user): environments are detected from the theme only, never from LOS mutators.
 - 2026-10-23 (user): add a Toxic Gas option (`normalize_toxic_gas`, default on like Ventilation Purge) that removes only the theme's shading environment.
-- 2026-10-24 (user): the Toxic Gas option was removed (`38a0a9c`) after a test on a map that turned out not to be a Toxic Gas mission, then reinstated (`844b521`). Its in-game test is still open.
+- 2026-10-24 (user): the Toxic Gas option was removed (`38a0a9c`) after a test on a map that turned out not to be a Toxic Gas mission, then reinstated (`844b521`). Tested in a real Toxic Gas mission the same day: works well, the gas plants and clouds stay readable (user).
 - 2026-10-24 (user): move the rewrite into Let There Be Light (same ModID, so no settings import) for live testing; do not push.
 - 2026-10-24 (user): delete the `LetThereBeLightBeta` prototype.
 - 2026-10-24 (user, in game): keep forcing every light on in darkness, Dawn and Inferno. Turning on only the theme's light groups (`LightControllerSystem._extract_light_groups`, commit `20594bf`, reverted in `ac4ccfc`) made Inferno far too dark and unlike the standard mission. The forced lights also light lamps that are off in the standard mission (on `fm_cargo` a ceiling lamp near (94.8, 16.5, -4.3) shines through the map's steam); that is accepted.
@@ -103,7 +103,7 @@ Smallest next in-game test:
 5. Start a Power Interruption mission with Dark Mission Lighting on Atmospheric Lighting. Expected: chat "Darkness mission lights enabled" and the mission lights on.
 6. In the mission, run `dee census hooks --mod LetThereBeLight`. Expected: every target `dmf_hooked`, and no `Unit.flow_event` hook.
 
-Runtime-pending: theme-unit collection in a real Inferno mission, the flow-event mute (fire sounds gone), the Inferno audio reset (no Inferno ambience or music variant), gas-cloud visibility under the standard environment, Dawn and Ventilation Purge.
+Runtime-pending: theme-unit collection in a real Inferno mission, the flow-event mute (fire sounds gone), the Inferno audio reset (no Inferno ambience or music variant), Dawn and Ventilation Purge.
 
 ## Open items
 - 2026-10-23: the name list can go once the theme-unit set is confirmed to cover the seven named fire particles. 2026-10-24: confirmed on fm_cargo (299 of 299 inside the theme); other Inferno maps unchecked.
